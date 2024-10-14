@@ -1,9 +1,10 @@
-# handlers/new_message_handler.py
-
-from telethon import events, Button
+from telethon import events, Button, types
 from clients import user_client, bot_client
 from config import SOURCE_CHANNEL, ADMIN_CHAT_ID
+from PIL import Image
 import logging
+import io
+import mimetypes
 
 # Dictionaries to store pending and editing messages
 pending_messages = {}
@@ -15,17 +16,60 @@ logger = logging.getLogger(__name__)
 async def new_message_listener(event):
     try:
         message = event.message
-
-        # Log the received message
-        logger.info(f"New message from {SOURCE_CHANNEL}: {message.text}")
-
-        # Generate a unique ID for tracking
+        logger.info(f"New message from {SOURCE_CHANNEL}: {message.text or 'Media message'}")
         unique_id = f"{message.chat_id}_{message.id}"
 
-        # Store the message content for later reference
-        pending_messages[unique_id] = message
+        message_info = {
+            'text': message.text,
+            'media': None
+        }
 
-        # Create approval buttons with the new "Edit" button
+        if message.media:
+            media_bytes = await message.download_media(file=io.BytesIO())
+            media_bytes.seek(0)
+
+            media_file = media_bytes
+            filename = 'file'
+
+            # Determine media type
+            if message.photo:
+                # It's a photo
+                is_photo = True
+                media_file.name = 'image.jpg'
+                message_info['media_type'] = 'photo'
+            elif message.video:
+                # It's a video
+                is_photo = False
+                filename = 'video.mp4'
+                media_file.name = filename
+                message_info['media_type'] = 'video'
+            else:
+                # Other media types (documents, audio, etc.)
+                is_photo = False
+                # Try to get the original filename
+                if message.document:
+                    for attr in message.document.attributes:
+                        if isinstance(attr, types.DocumentAttributeFilename):
+                            filename = attr.file_name
+                            break
+                    else:
+                        # Use mime type to guess extension
+                        mime_type = message.document.mime_type or ''
+                        extension = mimetypes.guess_extension(mime_type) or ''
+                        filename = f'file{extension}'
+                media_file.name = filename
+                message_info['media_type'] = 'document'
+
+            message_info['media'] = {
+                'file': media_file,
+                'is_photo': is_photo,
+                'filename': filename
+            }
+        else:
+            message_info['media'] = None
+
+        pending_messages[unique_id] = message_info
+
         buttons = [
             [
                 Button.inline("✅ Approve", data=f"approve_{unique_id}"),
@@ -34,16 +78,39 @@ async def new_message_listener(event):
             ]
         ]
 
-        # Send the message to the admin chat for approval using the bot
-        approval_msg = await bot_client.send_message(
-            entity=ADMIN_CHAT_ID,
-            message=f"New message from **{SOURCE_CHANNEL}**:\n\n{message.text}",
-            buttons=buttons,
-            parse_mode='markdown'
-        )
+        if message_info['media']:
+            if message_info['media']['is_photo']:
+                # Send photo without attributes
+                await bot_client.send_file(
+                    entity=ADMIN_CHAT_ID,
+                    file=message_info['media']['file'],
+                    caption=f"New message from **{SOURCE_CHANNEL}**:\n\n{message_info['text'] or ''}",
+                    buttons=buttons,
+                    parse_mode='markdown'
+                )
+            else:
+                # Send other media types with attributes if necessary
+                attributes = []
+                if message_info['media_type'] == 'document':
+                    attributes.append(types.DocumentAttributeFilename(file_name=message_info['media']['filename']))
 
-        logger.info(f"Approval request sent for message ID: {unique_id} (Message to admin: {approval_msg.id})")
+                await bot_client.send_file(
+                    entity=ADMIN_CHAT_ID,
+                    file=message_info['media']['file'],
+                    caption=f"New message from **{SOURCE_CHANNEL}**:\n\n{message_info['text'] or ''}",
+                    attributes=attributes,
+                    buttons=buttons,
+                    parse_mode='markdown'
+                )
+        else:
+            await bot_client.send_message(
+                entity=ADMIN_CHAT_ID,
+                message=f"New message from **{SOURCE_CHANNEL}**:\n\n{message_info['text']}",
+                buttons=buttons,
+                parse_mode='markdown'
+            )
 
+        logger.info(f"Approval request sent for message ID: {unique_id}")
     except Exception as e:
         logger.error(f"An error occurred in new_message_listener: {e}")
 
