@@ -1,6 +1,6 @@
 from telethon import events, Button, types
 from clients import user_client, bot_client
-from config import SOURCE_CHANNEL, ADMIN_CHAT_ID
+from config import SOURCE_CHANNELS, ADMIN_CHAT_ID
 from PIL import Image
 import logging
 import io
@@ -12,16 +12,24 @@ editing_messages = {}
 
 logger = logging.getLogger(__name__)
 
-@user_client.on(events.NewMessage(chats=SOURCE_CHANNEL))
+@user_client.on(events.NewMessage(chats=SOURCE_CHANNELS))
 async def new_message_listener(event):
     try:
         message = event.message
-        logger.info(f"New message from {SOURCE_CHANNEL}: {message.text or 'Media message'}")
+        chat = await event.get_chat()
+        chat_title = chat.title or 'Unknown Chat'
+        chat_username = chat.username or str(chat.id)
+        source_channel = chat_username  # Use this for identification
+
+        logger.info(f"New message from {chat_title}: {message.text or 'Media message'}")
+
         unique_id = f"{message.chat_id}_{message.id}"
 
         message_info = {
             'text': message.text,
-            'media': None
+            'media': None,
+            'source_channel': source_channel,
+            'media_type': None
         }
 
         if message.media:
@@ -84,7 +92,7 @@ async def new_message_listener(event):
                 await bot_client.send_file(
                     entity=ADMIN_CHAT_ID,
                     file=message_info['media']['file'],
-                    caption=f"New message from **{SOURCE_CHANNEL}**:\n\n{message_info['text'] or ''}",
+                    caption=f"New message from **{chat_title}**:\n\n{message_info['text'] or ''}",
                     buttons=buttons,
                     parse_mode='markdown'
                 )
@@ -97,7 +105,7 @@ async def new_message_listener(event):
                 await bot_client.send_file(
                     entity=ADMIN_CHAT_ID,
                     file=message_info['media']['file'],
-                    caption=f"New message from **{SOURCE_CHANNEL}**:\n\n{message_info['text'] or ''}",
+                    caption=f"New message from **{chat_title}**:\n\n{message_info['text'] or ''}",
                     attributes=attributes,
                     buttons=buttons,
                     parse_mode='markdown'
@@ -105,7 +113,7 @@ async def new_message_listener(event):
         else:
             await bot_client.send_message(
                 entity=ADMIN_CHAT_ID,
-                message=f"New message from **{SOURCE_CHANNEL}**:\n\n{message_info['text']}",
+                message=f"New message from **{chat_title}**:\n\n{message_info['text']}",
                 buttons=buttons,
                 parse_mode='markdown'
             )
