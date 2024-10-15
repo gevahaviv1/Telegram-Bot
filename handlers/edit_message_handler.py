@@ -1,8 +1,9 @@
+# edit_message_handler.py
+
 from telethon import events, Button, types
 from config import ADMIN_CHAT_ID
 from clients import bot_client
 from handlers.new_message_handler import pending_messages, editing_messages
-from PIL import Image
 import logging
 import io
 
@@ -31,8 +32,7 @@ async def edit_message_handler(event):
         edited_message = event.message
         new_text = edited_message.text
         if new_text:
-            message_info['ai_text'] = new_text  # This will update the AI processed text
-            message_info['text'] = new_text  # Also update the original text
+            message_info['text'] = new_text  # Update the original text
 
         # If new media is provided, update it; otherwise, keep the existing media
         if edited_message.media:
@@ -91,6 +91,9 @@ async def edit_message_handler(event):
 
         # Use edit_message to update both text and caption (for media)
         if message_info['media']:
+            # Reset file pointer to the beginning
+            message_info['media']['file'].seek(0)
+
             await bot_client.send_file(
                 ADMIN_CHAT_ID,
                 file=message_info['media']['file'],
@@ -110,6 +113,10 @@ async def edit_message_handler(event):
             )
 
         logger.info(f"Message ID {unique_id} has been edited.")
+
+        # Remove the 'editing' flag
+        message_info['editing'] = False
+
         del editing_messages[chat_id]
     else:
         logger.info(f"Chat {chat_id} is not in editing state or message is not from admin chat.")

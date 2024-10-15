@@ -1,8 +1,10 @@
+# new_message_listener.py
+
 import io
 from telethon import events, Button, types
 import mimetypes
 import logging
-import asyncio  # Import asyncio
+import asyncio
 from PIL import Image
 from clients import user_client, bot_client
 from config import ADMIN_CHAT_ID, SOURCE_CHANNELS
@@ -10,7 +12,6 @@ from config import ADMIN_CHAT_ID, SOURCE_CHANNELS
 # Dictionaries to store pending and editing messages
 pending_messages = {}
 editing_messages = {}
-pending_tasks = {}  # Dictionary to store pending deletion tasks
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ async def new_message_listener(event):
                 Button.inline("✅ Approve", data=f"approve_{unique_id}"),
                 Button.inline("❌ Disapprove", data=f"disapprove_{unique_id}"),
                 Button.inline("✏️ Edit", data=f"edit_{unique_id}"),
-                Button.inline("🤖 AI", data=f"ai_{unique_id}")  # New AI button
+                Button.inline("🤖 AI", data=f"ai_{unique_id}")
             ]
         ]
 
@@ -134,11 +135,16 @@ async def new_message_listener(event):
         logger.error(f"An error occurred in new_message_listener: {e}")
 
 async def schedule_deletion(unique_id, approval_msg_id):
-    # Wait for 30 hours
-    await asyncio.sleep(108000)
+    # Wait for the specified timeout duration
+    await asyncio.sleep(108000)  # Adjust the timeout as needed (e.g., 20 seconds)
 
     # Check if the message is still pending
     if unique_id in pending_messages:
+        message_info = pending_messages[unique_id]
+        if message_info.get('editing', False):
+            logger.info(f"Message ID {unique_id} is being edited; skipping deletion.")
+            return  # Do not delete if the message is being edited
+
         try:
             # Delete the approval message from the admin group
             await bot_client.delete_messages(ADMIN_CHAT_ID, approval_msg_id)

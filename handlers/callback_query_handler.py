@@ -23,6 +23,10 @@ async def callback_query_handler(event):
         chat_id = event.chat_id
         logger.info(f"Callback triggered: {data}")
 
+        # Initialize action and unique_id
+        action = None
+        unique_id = None
+
         # Updated action parsing to include 'approve', 'disapprove', and 'edit' actions
         if data.startswith("approve_ai_"):
             action = "approve_ai"
@@ -50,6 +54,12 @@ async def callback_query_handler(event):
             await event.answer("Unknown action.", alert=True)
             return
 
+        # Check if action and unique_id are properly set
+        if action is None or unique_id is None:
+            logger.error(f"Action or unique_id not set. Data: {data}")
+            await event.answer("Invalid action.", alert=True)
+            return
+
         logger.info(f"Action: {action} | Unique ID: {unique_id}")
 
         # Retrieve message details
@@ -62,16 +72,15 @@ async def callback_query_handler(event):
 
         approval_msg = await event.get_message()
 
-        # Remove the message from pending_messages to prevent scheduled deletion
-        if action in ["approve", "disapprove", "approve_ai", "disapprove_ai"]:
-            del pending_messages[unique_id]
-
         if action == "approve":
             # Handle approval of original message
             try:
                 text = message_info['text']
                 media = message_info['media']
                 if media:
+                    # Reset file pointer to the beginning
+                    media['file'].seek(0)
+
                     if media['is_photo']:
                         await user_client.send_file(
                             TARGET_CHANNEL,
@@ -91,6 +100,9 @@ async def callback_query_handler(event):
                 await approval_msg.edit(f"✅ **Message Approved**\n\n{text}", buttons=None)
                 logger.info(f"Message approved for ID: {unique_id}")
 
+                # Remove from pending_messages after successful approval
+                del pending_messages[unique_id]
+
             except Exception as e:
                 logger.error(f"Error approving message: {e}")
                 await event.answer("Failed to approve the message.", alert=True)
@@ -100,11 +112,15 @@ async def callback_query_handler(event):
                 await approval_msg.edit("❌ **Message Disapproved**", buttons=None)
                 logger.info(f"Message disapproved for ID: {unique_id}")
 
+                # Remove from pending_messages after successful disapproval
+                del pending_messages[unique_id]
+
             except Exception as e:
                 logger.error(f"Error disapproving message: {e}")
                 await event.answer("Failed to disapprove the message.", alert=True)
 
         elif action == "edit":
+            message_info['editing'] = True  # Indicate that the message is being edited
             editing_messages[chat_id] = {'unique_id': unique_id, 'approval_msg_id': approval_msg.id}
             await approval_msg.edit("✏️ **Send the edited message.**", buttons=None)
 
@@ -178,6 +194,9 @@ async def callback_query_handler(event):
                 await approval_msg.edit(f"✅ **AI-Processed Message Approved**", buttons=None)
                 logger.info(f"AI-Processed message approved for ID: {unique_id}")
 
+                # Remove from pending_messages after successful approval
+                del pending_messages[unique_id]
+
             except Exception as e:
                 logger.error(f"Error approving AI-processed message: {e}")
                 await event.answer("Failed to approve the message.", alert=True)
@@ -187,11 +206,15 @@ async def callback_query_handler(event):
                 await approval_msg.edit("❌ **AI-Processed Message Disapproved**", buttons=None)
                 logger.info(f"AI-Processed message disapproved for ID: {unique_id}")
 
+                # Remove from pending_messages after successful disapproval
+                del pending_messages[unique_id]
+
             except Exception as e:
                 logger.error(f"Error disapproving AI-processed message: {e}")
                 await event.answer("Failed to disapprove the message.", alert=True)
 
         elif action == "edit_ai":
+            message_info['editing'] = True  # Indicate that the message is being edited
             editing_messages[chat_id] = {'unique_id': unique_id, 'approval_msg_id': approval_msg.id}
             await approval_msg.edit("✏️ **Send the edited message.**", buttons=None)
 
