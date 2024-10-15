@@ -1,10 +1,12 @@
-from telethon import events, Button, types
-from clients import user_client, bot_client
-from config import SOURCE_CHANNELS, ADMIN_CHAT_ID
-from PIL import Image
-import logging
+# new_message_listener.py
+
 import io
+from telethon import events, Button, types
 import mimetypes
+import logging
+from PIL import Image
+from clients import user_client, bot_client
+from config import ADMIN_CHAT_ID, SOURCE_CHANNELS
 
 # Dictionaries to store pending and editing messages
 pending_messages = {}
@@ -78,11 +80,13 @@ async def new_message_listener(event):
 
         pending_messages[unique_id] = message_info
 
+        # Add the "AI" button alongside existing buttons
         buttons = [
             [
                 Button.inline("✅ Approve", data=f"approve_{unique_id}"),
                 Button.inline("❌ Disapprove", data=f"disapprove_{unique_id}"),
-                Button.inline("✏️ Edit", data=f"edit_{unique_id}")
+                Button.inline("✏️ Edit", data=f"edit_{unique_id}"),
+                Button.inline("🤖 AI", data=f"ai_{unique_id}")  # New AI button
             ]
         ]
 

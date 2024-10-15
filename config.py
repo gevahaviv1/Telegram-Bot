@@ -1,5 +1,9 @@
 # config.py
 
+import os
+
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
 # Telegram API credentials
 USER_API_ID = '20010499'  # Your API ID
 USER_API_HASH = '783aea95593a9a30bfa4e69d98f3158e'  # Your API Hash
