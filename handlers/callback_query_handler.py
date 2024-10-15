@@ -190,7 +190,27 @@ async def callback_query_handler(event):
                 return
 
             try:
-                await user_client.send_message(TARGET_CHANNEL, ai_text)
+                media = message_info['media']
+                if media:
+                    # Reset file pointer to the beginning
+                    media['file'].seek(0)
+
+                    if media['is_photo']:
+                        await user_client.send_file(
+                            TARGET_CHANNEL,
+                            file=media['file'],
+                            caption=ai_text
+                        )
+                    else:
+                        await user_client.send_file(
+                            TARGET_CHANNEL,
+                            file=media['file'],
+                            caption=ai_text,
+                            attributes=[types.DocumentAttributeFilename(file_name=media['filename'])]
+                        )
+                else:
+                    await user_client.send_message(TARGET_CHANNEL, ai_text)
+
                 await approval_msg.edit(f"✅ **AI-Processed Message Approved**", buttons=None)
                 logger.info(f"AI-Processed message approved for ID: {unique_id}")
 
@@ -215,7 +235,7 @@ async def callback_query_handler(event):
 
         elif action == "edit_ai":
             message_info['editing'] = True  # Indicate that the message is being edited
-            editing_messages[chat_id] = {'unique_id': unique_id, 'approval_msg_id': approval_msg.id}
+            editing_messages[chat_id] = {'unique_id': unique_id, 'approval_msg_id': approval_msg.id, 'is_ai': True}
             await approval_msg.edit("✏️ **Send the edited message.**", buttons=None)
 
     except Exception as e:
