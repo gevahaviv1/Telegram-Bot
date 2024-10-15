@@ -1,3 +1,5 @@
+# callback_query_handler.py
+
 from clients import user_client, bot_client
 from config import TARGET_CHANNEL, ADMIN_CHAT_ID, OPENAI_API_KEY
 from handlers.new_message_handler import pending_messages, editing_messages
@@ -60,6 +62,10 @@ async def callback_query_handler(event):
 
         approval_msg = await event.get_message()
 
+        # Remove the message from pending_messages to prevent scheduled deletion
+        if action in ["approve", "disapprove", "approve_ai", "disapprove_ai"]:
+            del pending_messages[unique_id]
+
         if action == "approve":
             # Handle approval of original message
             try:
@@ -83,7 +89,6 @@ async def callback_query_handler(event):
                     await user_client.send_message(TARGET_CHANNEL, text)
 
                 await approval_msg.edit(f"✅ **Message Approved**\n\n{text}", buttons=None)
-                del pending_messages[unique_id]
                 logger.info(f"Message approved for ID: {unique_id}")
 
             except Exception as e:
@@ -93,7 +98,6 @@ async def callback_query_handler(event):
         elif action == "disapprove":
             try:
                 await approval_msg.edit("❌ **Message Disapproved**", buttons=None)
-                del pending_messages[unique_id]
                 logger.info(f"Message disapproved for ID: {unique_id}")
 
             except Exception as e:
@@ -104,7 +108,6 @@ async def callback_query_handler(event):
             editing_messages[chat_id] = {'unique_id': unique_id, 'approval_msg_id': approval_msg.id}
             await approval_msg.edit("✏️ **Send the edited message.**", buttons=None)
 
-        # Existing code for AI actions
         elif action == "ai":
             original_text = message_info['text'] or ""
             if not original_text.strip():
@@ -173,7 +176,6 @@ async def callback_query_handler(event):
             try:
                 await user_client.send_message(TARGET_CHANNEL, ai_text)
                 await approval_msg.edit(f"✅ **AI-Processed Message Approved**", buttons=None)
-                del pending_messages[unique_id]
                 logger.info(f"AI-Processed message approved for ID: {unique_id}")
 
             except Exception as e:
@@ -183,7 +185,6 @@ async def callback_query_handler(event):
         elif action == "disapprove_ai":
             try:
                 await approval_msg.edit("❌ **AI-Processed Message Disapproved**", buttons=None)
-                del pending_messages[unique_id]
                 logger.info(f"AI-Processed message disapproved for ID: {unique_id}")
 
             except Exception as e:

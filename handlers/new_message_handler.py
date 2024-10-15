@@ -1,9 +1,8 @@
-# new_message_listener.py
-
 import io
 from telethon import events, Button, types
 import mimetypes
 import logging
+import asyncio  # Import asyncio
 from PIL import Image
 from clients import user_client, bot_client
 from config import ADMIN_CHAT_ID, SOURCE_CHANNELS
@@ -11,6 +10,7 @@ from config import ADMIN_CHAT_ID, SOURCE_CHANNELS
 # Dictionaries to store pending and editing messages
 pending_messages = {}
 editing_messages = {}
+pending_tasks = {}  # Dictionary to store pending deletion tasks
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,8 @@ async def new_message_listener(event):
             'text': message.text,
             'media': None,
             'source_channel': source_channel,
-            'media_type': None
+            'media_type': None,
+            'approval_msg_id': None  # Add this to store approval message ID
         }
 
         if message.media:
@@ -90,10 +91,10 @@ async def new_message_listener(event):
             ]
         ]
 
+        # Send the approval message and store its message ID
         if message_info['media']:
             if message_info['media']['is_photo']:
-                # Send photo without attributes
-                await bot_client.send_file(
+                approval_msg = await bot_client.send_file(
                     entity=ADMIN_CHAT_ID,
                     file=message_info['media']['file'],
                     caption=f"New message from **{chat_title}**:\n\n{message_info['text'] or ''}",
@@ -101,12 +102,11 @@ async def new_message_listener(event):
                     parse_mode='markdown'
                 )
             else:
-                # Send other media types with attributes if necessary
                 attributes = []
                 if message_info['media_type'] == 'document':
                     attributes.append(types.DocumentAttributeFilename(file_name=message_info['media']['filename']))
 
-                await bot_client.send_file(
+                approval_msg = await bot_client.send_file(
                     entity=ADMIN_CHAT_ID,
                     file=message_info['media']['file'],
                     caption=f"New message from **{chat_title}**:\n\n{message_info['text'] or ''}",
@@ -115,14 +115,38 @@ async def new_message_listener(event):
                     parse_mode='markdown'
                 )
         else:
-            await bot_client.send_message(
+            approval_msg = await bot_client.send_message(
                 entity=ADMIN_CHAT_ID,
                 message=f"New message from **{chat_title}**:\n\n{message_info['text']}",
                 buttons=buttons,
                 parse_mode='markdown'
             )
 
+        # Store the approval message ID in message_info
+        message_info['approval_msg_id'] = approval_msg.id
+
         logger.info(f"Approval request sent for message ID: {unique_id}")
+
+        # Schedule a deletion task
+        asyncio.create_task(schedule_deletion(unique_id, approval_msg.id))
+
     except Exception as e:
         logger.error(f"An error occurred in new_message_listener: {e}")
+
+async def schedule_deletion(unique_id, approval_msg_id):
+    # Wait for 30 hours
+    await asyncio.sleep(108000)
+
+    # Check if the message is still pending
+    if unique_id in pending_messages:
+        try:
+            # Delete the approval message from the admin group
+            await bot_client.delete_messages(ADMIN_CHAT_ID, approval_msg_id)
+            logger.info(f"Approval message for ID {unique_id} deleted after timeout.")
+
+            # Remove the message from pending_messages
+            del pending_messages[unique_id]
+
+        except Exception as e:
+            logger.error(f"Error deleting approval message for ID {unique_id}: {e}")
 
