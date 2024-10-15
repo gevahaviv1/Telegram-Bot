@@ -8,13 +8,13 @@ import io
 
 logger = logging.getLogger(__name__)
 
-@bot_client.on(events.NewMessage)
+@bot_client.on(events.NewMessage(chats=ADMIN_CHAT_ID))
 async def edit_message_handler(event):
     chat_id = event.chat_id
 
     logger.info(f"edit_message_handler triggered in chat {chat_id}")
 
-    if chat_id in editing_messages and chat_id == ADMIN_CHAT_ID:
+    if chat_id in editing_messages:
         edit_info = editing_messages[chat_id]
         unique_id = edit_info['unique_id']
         approval_msg_id = edit_info['approval_msg_id']
@@ -32,6 +32,7 @@ async def edit_message_handler(event):
         new_text = edited_message.text
         if new_text:
             message_info['ai_text'] = new_text  # This will update the AI processed text
+            message_info['text'] = new_text  # Also update the original text
 
         # If new media is provided, update it; otherwise, keep the existing media
         if edited_message.media:
@@ -89,13 +90,24 @@ async def edit_message_handler(event):
         ]
 
         # Use edit_message to update both text and caption (for media)
-        await bot_client.edit_message(
-            ADMIN_CHAT_ID,
-            approval_msg_id,
-            text=f"**Edited Message from {message_info['source_channel']}:**\n\n{message_info['ai_text']}",
-            buttons=buttons,
-            parse_mode='markdown'
-        )
+        if message_info['media']:
+            await bot_client.send_file(
+                ADMIN_CHAT_ID,
+                file=message_info['media']['file'],
+                caption=f"**Edited Message:**\n\n{message_info['text']}",
+                buttons=buttons,
+                parse_mode='markdown'
+            )
+            # Delete the old approval message
+            await bot_client.delete_messages(ADMIN_CHAT_ID, approval_msg_id)
+        else:
+            await bot_client.edit_message(
+                ADMIN_CHAT_ID,
+                approval_msg_id,
+                text=f"**Edited Message:**\n\n{message_info['text']}",
+                buttons=buttons,
+                parse_mode='markdown'
+            )
 
         logger.info(f"Message ID {unique_id} has been edited.")
         del editing_messages[chat_id]
