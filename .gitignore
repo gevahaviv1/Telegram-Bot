@@ -1,0 +1,10 @@
+# Ignore __pycache__ directories
+__pycache__/
+
+# Ignore specific session files
+user_session.session-journal
+user_session.session
+
+# Ignore __pycache__ in a specific directory
+/home/geva-haviv/PythonProjects/Telegram-Bot/handlers/__pycache__/
+
