@@ -1,3 +1,6 @@
+# Ignore session files
+*.session
+
 # Python bytecode
 *.py[cod]
 __pycache__/
