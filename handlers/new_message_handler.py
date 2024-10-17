@@ -1,5 +1,3 @@
-# new_message_listener.py
-
 import io
 from telethon import events, Button, types
 import mimetypes
@@ -8,6 +6,7 @@ import asyncio
 from PIL import Image
 from clients import user_client, bot_client
 from config import ADMIN_CHAT_ID, SOURCE_CHANNELS
+from utils import get_media_info  # Import the utility function
 
 # Dictionaries to store pending and editing messages
 pending_messages = {}
@@ -15,7 +14,6 @@ editing_messages = {}
 
 logger = logging.getLogger(__name__)
 
-print('Initalized new message handler')
 @user_client.on(events.NewMessage(chats=SOURCE_CHANNELS))
 async def new_message_listener(event):
     try:
@@ -37,47 +35,9 @@ async def new_message_listener(event):
             'approval_msg_id': None  # Add this to store approval message ID
         }
 
+        # Use the utility function to handle media
         if message.media:
-            media_bytes = await message.download_media(file=io.BytesIO())
-            media_bytes.seek(0)
-
-            media_file = media_bytes
-            filename = 'file'
-
-            # Determine media type
-            if message.photo:
-                # It's a photo
-                is_photo = True
-                media_file.name = 'image.jpg'
-                message_info['media_type'] = 'photo'
-            elif message.video:
-                # It's a video
-                is_photo = False
-                filename = 'video.mp4'
-                media_file.name = filename
-                message_info['media_type'] = 'video'
-            else:
-                # Other media types (documents, audio, etc.)
-                is_photo = False
-                # Try to get the original filename
-                if message.document:
-                    for attr in message.document.attributes:
-                        if isinstance(attr, types.DocumentAttributeFilename):
-                            filename = attr.file_name
-                            break
-                    else:
-                        # Use mime type to guess extension
-                        mime_type = message.document.mime_type or ''
-                        extension = mimetypes.guess_extension(mime_type) or ''
-                        filename = f'file{extension}'
-                media_file.name = filename
-                message_info['media_type'] = 'document'
-
-            message_info['media'] = {
-                'file': media_file,
-                'is_photo': is_photo,
-                'filename': filename
-            }
+            message_info['media'] = get_media_info(message)
         else:
             message_info['media'] = None
 

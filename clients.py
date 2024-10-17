@@ -1,10 +1,16 @@
-# clients.py
-
+import os
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from config import USER_API_ID, USER_API_HASH, PHONE_NUMBER, BOT_TOKEN
+from dotenv import load_dotenv
 
-# Initialize the user client
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+# Load sensitive data from environment variables for security
+USER_API_ID = os.getenv('USER_API_ID')
+USER_API_HASH = os.getenv('USER_API_HASH')
+
+# Initialize the user client with a user session
 user_client = TelegramClient('user_session', USER_API_ID, USER_API_HASH)
 
 # Initialize the bot client with an in-memory session

@@ -1,15 +1,15 @@
-# edit_message_handler.py
-
 from telethon import events, Button, types
 from config import ADMIN_CHAT_ID
 from clients import bot_client
 from handlers.new_message_handler import pending_messages, editing_messages
+from utils import get_media_info  # Import the utility function
 import logging
 import io
 
 logger = logging.getLogger(__name__)
 
-print('edit')
+print('Initialized edit message handler')
+
 @bot_client.on(events.NewMessage(chats=ADMIN_CHAT_ID))
 async def edit_message_handler(event):
     chat_id = event.chat_id
@@ -37,51 +37,9 @@ async def edit_message_handler(event):
 
         # If new media is provided, update it; otherwise, keep the existing media
         if edited_message.media:
-            media_bytes = await edited_message.download_media(file=io.BytesIO())
-            media_bytes.seek(0)
+            message_info['media'] = get_media_info(edited_message)  # Using utility function
 
-            media_file = media_bytes
-            filename = 'file'
-
-            # Determine media type
-            if edited_message.photo:
-                # It's a photo
-                is_photo = True
-                media_file.name = 'image.jpg'
-                message_info['media_type'] = 'photo'
-            elif edited_message.video:
-                # It's a video
-                is_photo = False
-                filename = 'video.mp4'
-                media_file.name = filename
-                message_info['media_type'] = 'video'
-            else:
-                # Other media types (documents, audio, etc.)
-                is_photo = False
-                # Try to get the original filename
-                if edited_message.document:
-                    for attr in edited_message.document.attributes:
-                        if isinstance(attr, types.DocumentAttributeFilename):
-                            filename = attr.file_name
-                            break
-                    else:
-                        # Use mime type to guess extension
-                        mime_type = edited_message.document.mime_type or ''
-                        extension = mimetypes.guess_extension(mime_type) or ''
-                        filename = f'file{extension}'
-                media_file.name = filename
-                message_info['media_type'] = 'document'
-
-            message_info['media'] = {
-                'file': media_file,
-                'is_photo': is_photo,
-                'filename': filename
-            }
-        else:
-            # If no new media is provided, retain the original media
-            pass  # No action needed; existing media remains
-
-        # Update the approval message
+        # Update the approval message with edited content
         buttons = [
             [
                 Button.inline("✅ Approve", data=f"approve_{unique_id}"),

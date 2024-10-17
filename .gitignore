@@ -1,10 +1,60 @@
-# Ignore __pycache__ directories
+# Python bytecode
+*.py[cod]
 __pycache__/
+*.so
 
-# Ignore specific session files
-user_session.session-journal
-user_session.session
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
 
-# Ignore __pycache__ in a specific directory
-/home/geva-haviv/PythonProjects/Telegram-Bot/handlers/__pycache__/
+# PyInstaller
+*.manifest
+*.spec
 
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs and database
+*.log
+*.sqlite3
+*.db
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Environment Variables
+.env
+
+# PyCharm
+.idea/
+
+# VSCode
+.vscode/

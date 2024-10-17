@@ -1,11 +1,7 @@
-# main.py
-
 import logging
 import asyncio
 from clients import user_client, bot_client
-from config import PHONE_NUMBER, LOGGING_LEVEL
-from config import BOT_TOKEN
-import handlers  # Ensure handlers are imported
+from config import PHONE_NUMBER, LOGGING_LEVEL, BOT_TOKEN
 from telethon.errors import SessionPasswordNeededError
 from handlers.new_message_handler import new_message_listener
 from handlers.callback_query_handler import callback_query_handler
@@ -19,27 +15,25 @@ async def main():
     # Start the user client
     await user_client.start(phone=PHONE_NUMBER)
 
-    # If 2FA is enabled, you might need to enter the password
-    if await user_client.is_user_authorized():
-        logger.info("User client is authorized.")
-    else:
+    # If 2FA is enabled, handle it properly
+    if not await user_client.is_user_authorized():
         try:
             await user_client.sign_in(PHONE_NUMBER)
-            logger.info("User client signed in.")
         except SessionPasswordNeededError:
-            password = input("Two-step verification enabled. Please enter your password: ")
+            password = input("Enter your password for two-step verification: ")
             await user_client.sign_in(password=password)
+        logger.info("User client signed in.")
 
     # Start the bot client
     await bot_client.start(bot_token=BOT_TOKEN)
-    logger.info("Bot client started.")
+    logger.info("Bot client started and running.")
 
-    print("Bot is running and listening to messages...")
+    # Run both clients until disconnected
     await asyncio.gather(
         user_client.run_until_disconnected(),
         bot_client.run_until_disconnected()
     )
 
 if __name__ == '__main__':
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
 

@@ -1,22 +1,25 @@
-# config.py
-
 import os
+from dotenv import load_dotenv
 
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+# Define the path to the .env file
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 # Telegram API credentials
-USER_API_ID = '20010499'  # Your API ID
-USER_API_HASH = '783aea95593a9a30bfa4e69d98f3158e'  # Your API Hash
-PHONE_NUMBER = '+972526767751'  # Your phone number associated with Telegram
+USER_API_ID = os.getenv('USER_API_ID')
+USER_API_HASH = os.getenv('USER_API_HASH')
+PHONE_NUMBER = os.getenv('PHONE_NUMBER')
 
 # Bot token (from @BotFather)
-BOT_TOKEN = '7082820730:AAGcyrSg9zMhA__9_5X4XXcSSAuuA_aaZlY'  # Replace with your bot's token
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 # Channels and groups
-SOURCE_CHANNELS = ['amitsegal', 'idf_telegram', 'HallelBittonRosen', 'ongoingupdates', 'eretzh', 'MiddleEastNewsIl', 'themiddleasttwo']
-TARGET_CHANNEL = 'https://t.me/testgrouptmid'  # Your target channel's username or ID
-ADMIN_CHAT_ID = -1002255494530  # Replace with your group's actual Telegram ID
+SOURCE_CHANNELS = os.getenv('SOURCE_CHANNELS').split(',')
+TARGET_CHANNEL = os.getenv('TARGET_CHANNEL')
+ADMIN_CHAT_ID = int(os.getenv('ADMIN_CHAT_ID'))
 
 # Other configurations
-LOGGING_LEVEL = 'INFO'
+LOGGING_LEVEL = os.getenv('LOGGING_LEVEL', 'INFO')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
 
