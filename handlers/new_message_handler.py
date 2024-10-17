@@ -15,6 +15,7 @@ editing_messages = {}
 
 logger = logging.getLogger(__name__)
 
+print('Initalized new message handler')
 @user_client.on(events.NewMessage(chats=SOURCE_CHANNELS))
 async def new_message_listener(event):
     try:

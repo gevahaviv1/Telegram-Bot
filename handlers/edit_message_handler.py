@@ -9,6 +9,7 @@ import io
 
 logger = logging.getLogger(__name__)
 
+print('edit')
 @bot_client.on(events.NewMessage(chats=ADMIN_CHAT_ID))
 async def edit_message_handler(event):
     chat_id = event.chat_id

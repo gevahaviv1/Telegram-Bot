@@ -7,6 +7,9 @@ from config import PHONE_NUMBER, LOGGING_LEVEL
 from config import BOT_TOKEN
 import handlers  # Ensure handlers are imported
 from telethon.errors import SessionPasswordNeededError
+from handlers.new_message_handler import new_message_listener
+from handlers.callback_query_handler import callback_query_handler
+from handlers.edit_message_handler import edit_message_handler
 
 # Set up logging
 logging.basicConfig(level=LOGGING_LEVEL)
