@@ -37,7 +37,7 @@ async def new_message_listener(event):
 
         # Use the utility function to handle media
         if message.media:
-            message_info['media'] = get_media_info(message)
+            message_info['media'] = await get_media_info(message)  # Ensure this is awaited
         else:
             message_info['media'] = None
 

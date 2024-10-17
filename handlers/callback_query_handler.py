@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 # Initialize OpenAI
 openai.api_key = OPENAI_API_KEY
 
-print('callback')
 @bot_client.on(events.CallbackQuery)
 async def callback_query_handler(event):
     try:

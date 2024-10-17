@@ -2,15 +2,15 @@ import io
 import mimetypes
 from telethon import types
 
-def get_media_info(message):
+async def get_media_info(message):
     """Extracts media info from a message and returns a dictionary with media details."""
     media_bytes = io.BytesIO()
-    message.download_media(file=media_bytes)
+    await message.download_media(file=media_bytes)  # Await this call
     media_bytes.seek(0)
 
     media_file = media_bytes
     filename = 'file'
-    
+
     if message.photo:
         is_photo = True
         media_file.name = 'image.jpg'
