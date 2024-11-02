@@ -1,10 +1,15 @@
 # Ignore session files
 *.session
+*.session-journal
 
 # Python bytecode
 *.py[cod]
 __pycache__/
 *.so
+
+# Ignore keys
+api_key.text
+token.txt
 
 # Virtual environment
 venv/
